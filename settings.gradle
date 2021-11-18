@@ -1,0 +1,3 @@
+include ':keyattestation'
+include ':sample'
+rootProject.name = "AndroidKeyAttestation"
