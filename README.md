@@ -16,14 +16,10 @@ buildscript {
         google()
         jcenter()
         maven {
-            url 'https://openrepo.paxengine.com.cn/api/v4/projects/20/packages/maven'
-            name "GitLab"
-            credentials(HttpHeaderCredentials) {
-                name = 'Deploy-Token'
-                value = 'tKxMYSwBrxYcDZyVzZAm'
-            }
-            authentication {
-                header(HttpHeaderAuthentication)
+            url = uri("https://maven.pkg.github.com/Chenziquan/AndroidKeyAttestation")
+            credentials {
+                username = "Chenziquan"
+                password = "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"
             }
         }
     }
@@ -34,14 +30,10 @@ allprojects {
         google()
         jcenter()
         maven {
-            url 'https://openrepo.paxengine.com.cn/api/v4/projects/20/packages/maven'
-            name "GitLab"
-            credentials(HttpHeaderCredentials) {
-                name = 'Deploy-Token'
-                value = 'tKxMYSwBrxYcDZyVzZAm'
-            }
-            authentication {
-                header(HttpHeaderAuthentication)
+            url = uri("https://maven.pkg.github.com/Chenziquan/AndroidKeyAttestation")
+            credentials {
+                username = "Chenziquan"
+                password = "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"
             }
         }
     }
