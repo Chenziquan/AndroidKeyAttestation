@@ -42,5 +42,5 @@ dependencies {
     implementation "androidx.preference:preference:1.1.1"
     implementation "com.google.guava:guava:31.0-android"
     implementation "org.bouncycastle:bcpkix-jdk15to18:1.69"
-    implementation 'com.pax.jc:androidkeystore:1.0.0'
+    implementation 'com.jc:androidkeystore:1.0.0'
 }

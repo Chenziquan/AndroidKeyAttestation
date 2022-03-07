@@ -12,7 +12,7 @@
  * the License.
  */
 
-package com.pax.jc.keyattestation.attestation;
+package com.jc.keyattestation.attestation;
 
 import org.bouncycastle.asn1.ASN1Encodable;
 import org.bouncycastle.asn1.ASN1Sequence;

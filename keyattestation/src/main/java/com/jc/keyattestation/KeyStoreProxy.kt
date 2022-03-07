@@ -1,4 +1,4 @@
-package com.pax.jc.keyattestation
+package com.jc.keyattestation
 
 import android.content.Context
 import android.security.keystore.KeyGenParameterSpec

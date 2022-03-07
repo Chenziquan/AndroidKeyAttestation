@@ -1,10 +1,11 @@
-package com.pax.jc.androidkeyattestation
+package com.jc.androidkeyattestation
 
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.widget.Button
 import android.widget.TextView
-import com.pax.jc.keyattestation.KeyAttestation
+import com.jc.androidkeyattestation.R
+import com.jc.keyattestation.KeyAttestation
 
 class MainActivity : AppCompatActivity() {
     val keyAttestation = KeyAttestation.getInstance()

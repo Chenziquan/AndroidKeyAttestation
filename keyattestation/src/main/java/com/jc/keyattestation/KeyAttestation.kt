@@ -1,4 +1,4 @@
-package com.pax.jc.keyattestation
+package com.jc.keyattestation
 
 import android.app.KeyguardManager
 import android.app.admin.DevicePolicyManager
@@ -16,9 +16,10 @@ import com.google.common.collect.ImmutableMap
 import com.google.common.collect.ImmutableSet
 import com.google.common.hash.Hashing
 import com.google.common.io.BaseEncoding
-import com.pax.jc.keyattestation.attestation.Attestation
-import com.pax.jc.keyattestation.attestation.AuthorizationList
-import com.pax.jc.keyattestation.attestation.RootOfTrust
+import com.jc.keyattestation.attestation.Attestation
+import com.jc.keyattestation.attestation.AuthorizationList
+import com.jc.keyattestation.attestation.RootOfTrust
+import com.pax.jc.keyattestation.R
 import java.io.IOException
 import java.io.InputStream
 import java.security.*

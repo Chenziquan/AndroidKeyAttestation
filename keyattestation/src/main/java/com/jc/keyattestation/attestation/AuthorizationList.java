@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.pax.jc.keyattestation.attestation;
+package com.jc.keyattestation.attestation;
 
 import android.security.keystore.KeyProperties;
 import android.util.Log;

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.pax.jc.keyattestation.attestation;
+package com.jc.keyattestation.attestation;
 
 import com.google.common.collect.ImmutableSet;
 

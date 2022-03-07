@@ -1,4 +1,4 @@
-package com.pax.jc.androidkeyattestation
+package com.jc.androidkeyattestation
 
 import org.junit.Test
 

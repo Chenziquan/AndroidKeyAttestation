@@ -8,7 +8,7 @@ android {
     // buildToolsVersion "31.0.0"
 
     defaultConfig {
-        applicationId "com.pax.jc.androidkeyattestation"
+        applicationId "com.jc.androidkeyattestation"
         minSdkVersion 24
         targetSdkVersion 31
         versionCode 1
@@ -42,5 +42,5 @@ dependencies {
     testImplementation 'junit:junit:4.+'
     androidTestImplementation 'androidx.test.ext:junit:1.1.2'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.3.0'
-    implementation 'com.pax.jc:androidkeyattestation:1.0.0'
+    implementation 'com.jc:androidkeyattestation:1.0.0'
 }
