@@ -3,7 +3,7 @@ package com.jc.keyattestation
 import android.content.Context
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
-import com.pax.jc.androidkeystore.KeyStoreHelper
+import com.jc.androidkeystore.KeyStoreHelper
 import java.security.cert.Certificate
 import java.security.spec.ECGenParameterSpec
 import java.util.*

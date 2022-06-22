@@ -19,7 +19,7 @@ buildscript {
             url = uri("https://maven.pkg.github.com/Chenziquan/AndroidKeyAttestation")
             credentials {
                 username = "Chenziquan"
-                password = "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"
+                password = "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"
             }
         }
     }
@@ -33,7 +33,7 @@ allprojects {
             url = uri("https://maven.pkg.github.com/Chenziquan/AndroidKeyAttestation")
             credentials {
                 username = "Chenziquan"
-                password = "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"
+                password = "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"
             }
         }
     }

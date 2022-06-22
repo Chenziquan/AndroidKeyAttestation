@@ -22,6 +22,7 @@ import com.jc.keyattestation.attestation.RootOfTrust
 import com.pax.jc.keyattestation.R
 import java.io.IOException
 import java.io.InputStream
+import java.lang.StringBuilder
 import java.security.*
 import java.security.cert.Certificate
 import java.security.cert.CertificateException
@@ -782,6 +783,28 @@ class KeyAttestation private constructor() {
                     )
                 )
                 .put(
+                    "CFBB73FE2B99733B880AC1DFD5BAAA6146EA66B842C8781DA7B36269D4790774",
+                    DeviceInfo(
+                        R.string.device_sony_xperia_1_III,
+                        2,
+                        3,
+                        false,
+                        true,
+                        R.string.os_stock
+                    )
+                )
+                .put(
+                    "003997903C81E3EFF79EAA3FF54C1BD3AC30699D3665CD7E267F469D87DFB358",
+                    DeviceInfo(
+                        R.string.device_sony_xperia_1,
+                        2,
+                        3,
+                        false,
+                        true,
+                        R.string.os_stock
+                    )
+                )
+                .put(
                     "728800FEBB119ADD74519618AFEDB715E1C39FE08A4DE37D249BF54ACF1CE00F",
                     DeviceInfo(
                         R.string.device_blackberry_key2,
@@ -1143,7 +1166,7 @@ class KeyAttestation private constructor() {
                     )
                 )
                 .put(
-                    "3D3DEB132A89551D0A700D230BABAE4E3E80E3C7926ACDD7BAEDF9B57AD316D0",
+                    "466011C44BBF883DB38CF96617ED35C796CE2552C5357F9230258329E943DB70",
                     DeviceInfo(
                         R.string.device_sm_n970u,
                         3,
@@ -1184,8 +1207,8 @@ class KeyAttestation private constructor() {
 
     fun attestation(context: Context): AttestationResult {
         try {
-            attestation(context, null)
-            return AttestationResult(true, "")
+            val msg = attestation(context, null)
+            return AttestationResult(true, msg)
         } catch (e: GeneralSecurityException) {
             return AttestationResult(false, e.message ?: "")
         }
@@ -1193,12 +1216,12 @@ class KeyAttestation private constructor() {
     }
 
     @Throws(GeneralSecurityException::class)
-    fun attestation(context: Context, index: String?) {
+    fun attestation(context: Context, index: String?) :String{
         var keyIndex = index
         val challenge = getChallenge()
         if (TextUtils.isEmpty(keyIndex)) {
             val challengeIndex = getChallengeIndex(context)
-            keyIndex = Base64.encodeToString(challengeIndex, Base64.DEFAULT)
+            keyIndex = BaseEncoding.base16().encode(challengeIndex)
         }
         val persistentKeystoreAlias = KEYSTORE_ALIAS_PERSISTENT_PREFIX + keyIndex
         val keyStoreProxy = KeyStoreProxy.getInstance(context)
@@ -1238,8 +1261,10 @@ class KeyAttestation private constructor() {
             }
         }
         val generateKey = keyStoreProxy.generateKey(KeyProperties.KEY_ALGORITHM_EC, builder.build())
+        val log = StringBuilder()
         if (!generateKey) {
-            throw GeneralSecurityException("generate key fail")
+            log.append("generate key fail")
+            throw GeneralSecurityException(log.toString())
         }
 
         try {
@@ -1249,7 +1274,8 @@ class KeyAttestation private constructor() {
                 )
             }
             if (fingerprint!!.size != FINGERPRINT_LENGTH) {
-                throw GeneralSecurityException("fingerprint length mismatch")
+                log.append('\n').append("fingerprint length mismatch")
+                //throw GeneralSecurityException(log.toString())
             }
 
             val attestationCertificates: Array<Certificate> = keyStoreProxy.getCertificateChain(
@@ -1257,90 +1283,135 @@ class KeyAttestation private constructor() {
             )
             verifyCertificateSignatures(attestationCertificates)
 
-            val root1 = generateCertificate(context.resources, R.raw.google_root)
-            val root2 = generateCertificate(context.resources, R.raw.google_root)
+            val root0 = generateCertificate(context.resources, R.raw.google_root_0)
+            val root1 = generateCertificate(context.resources, R.raw.google_root_1)
+            val root2 = generateCertificate(context.resources, R.raw.google_root_2)
+            /*log.append('\n').append("Google Root1:")
+                .append(BaseEncoding.base16().encode(root1.encoded))
+            log.append('\n').append("Google Root2:")
+                .append(BaseEncoding.base16().encode(root2.encoded))*/
 
 
             // check that the root certificate is the Google key attestation root
-            if (!Arrays.equals(
-                    root1.encoded,
-                    attestationCertificates[attestationCertificates.size - 1].encoded
-                ) &&
-                !Arrays.equals(
-                    root2.encoded,
-                    attestationCertificates[attestationCertificates.size - 1].encoded
-                )
-            ) throw GeneralSecurityException("root certificate is not a valid key attestation root")
+            val attestationCertificate =
+                attestationCertificates[attestationCertificates.size - 1] as X509Certificate
+
+            log.append('\n').append("Attestation Root:")
+                .append(BaseEncoding.base64().encode(attestationCertificate.encoded))
+
+
+            if (!Arrays.equals(root0.encoded, attestationCertificate.encoded) &&
+                !Arrays.equals(root1.encoded, attestationCertificate.encoded) &&
+                !Arrays.equals(root2.encoded, attestationCertificate.encoded)
+            ) {
+                log.append('\n').append("root certificate is not a valid key attestation root")
+                //throw GeneralSecurityException(log.toString())
+            }
 
             val attestation = Attestation(attestationCertificates[0] as X509Certificate)
             val attestationSecurityLevel = attestation.attestationSecurityLevel
-
+            log.append('\n').append("attestationSecurityLevel:$attestationSecurityLevel")
             // enforce hardware-based attestation
             if (attestationSecurityLevel != Attestation.KM_SECURITY_LEVEL_TRUSTED_ENVIRONMENT &&
                 attestationSecurityLevel != Attestation.KM_SECURITY_LEVEL_STRONG_BOX
-            ) throw GeneralSecurityException("attestation security level is not valid")
-            if (attestation.keymasterSecurityLevel != attestationSecurityLevel)
-                throw GeneralSecurityException("keymaster security level does not match attestation security level")
+            ) {
+                log.append('\n').append("\"attestation security level is not valid\"")
+                //throw GeneralSecurityException(log.toString())
+            }
 
+            val keymasterSecurityLevel = attestation.keymasterSecurityLevel
+            log.append('\n').append("keymasterSecurityLevel:$keymasterSecurityLevel")
+            if (keymasterSecurityLevel != attestationSecurityLevel) {
+                log.append('\n')
+                    .append("keymaster security level does not match attestation security level")
+                //throw GeneralSecurityException(log.toString())
+            }
             // prevent replay attacks
-            if (!Arrays.equals(
-                    attestation.attestationChallenge, challenge
-                )
-            ) throw GeneralSecurityException(
-                "challenge mismatch"
-            )
+            if (!Arrays.equals(attestation.attestationChallenge, challenge)) {
+                log.append('\n').append("challenge mismatch")
+                //throw GeneralSecurityException(log.toString())
+            }
 
             // enforce communicating with the attestation app via OS level security
             val softwareEnforced = attestation.softwareEnforced
             val attestationApplicationId = softwareEnforced.attestationApplicationId
             val signatureDigests = attestationApplicationId.signatureDigests
-            if (signatureDigests.size != 1)
-                throw GeneralSecurityException("wrong number of attestation app signature digests")
-
+            log.append('\n').append("signatureDigests.size:${signatureDigests.size}")
+            if (signatureDigests.size != 1) {
+                log.append('\n').append("wrong number of attestation app signature digests")
+                //throw GeneralSecurityException(log.toString())
+            }
 
             val teeEnforced = attestation.teeEnforced
             // verified boot security checks
             val rootOfTrust = teeEnforced.rootOfTrust
-                ?: throw GeneralSecurityException("missing root of trust")
+            if (rootOfTrust == null) {
+                log.append('\n').append("missing root of trust")
+                throw GeneralSecurityException(log.toString())
+            }
 
-            if (!rootOfTrust.isDeviceLocked) throw GeneralSecurityException("device is not locked")
+            if (!rootOfTrust.isDeviceLocked) {
+                log.append('\n').append("device is not locked")
+                //throw GeneralSecurityException(log.toString())
+            }
+
 
             val verifiedBootState = rootOfTrust.verifiedBootState
+            log.append('\n').append("verifiedBootState:$verifiedBootState")
             val verifiedBootKey = BaseEncoding.base16().encode(rootOfTrust.verifiedBootKey)
             val device: DeviceInfo? =
                 if (verifiedBootState == RootOfTrust.KM_VERIFIED_BOOT_SELF_SIGNED) {
                     if (attestationSecurityLevel == Attestation.KM_SECURITY_LEVEL_STRONG_BOX) {
+                        log.append('\n').append("fingerprintsStrongBoxCustomOS")
                         fingerprintsStrongBoxCustomOS[verifiedBootKey]
                     } else {
+                        log.append('\n').append("fingerprintsCustomOS")
                         fingerprintsCustomOS[verifiedBootKey]
                     }
                 } else if (verifiedBootState == RootOfTrust.KM_VERIFIED_BOOT_VERIFIED) {
                     if (attestationSecurityLevel == Attestation.KM_SECURITY_LEVEL_STRONG_BOX) {
+                        log.append('\n').append("fingerprintsStrongBoxStock")
                         fingerprintsStrongBoxStock[verifiedBootKey]
                     } else {
+                        log.append('\n').append("fingerprintsStock")
                         fingerprintsStock[verifiedBootKey]
                     }
                 } else {
-                    throw GeneralSecurityException("verified boot state is not verified or self signed")
+                    log.append('\n').append("verified boot state is not verified or self signed")
+                    throw GeneralSecurityException(log.toString())
                 }
 
-            if (device == null) throw GeneralSecurityException("invalid verified boot key fingerprint: $verifiedBootKey")
+            if (device == null) {
+                log.append('\n').append("invalid verified boot key fingerprint: $verifiedBootKey")
+                throw GeneralSecurityException(log.toString())
+            }
 
 
             // OS version sanity checks
             val osVersion = teeEnforced.osVersion
-            if (osVersion == DEVELOPER_PREVIEW_OS_VERSION) throw GeneralSecurityException("OS version is not a production release")
-            else if (osVersion < OS_VERSION_MINIMUM) throw GeneralSecurityException("OS version too old: $osVersion")
+            if (osVersion == DEVELOPER_PREVIEW_OS_VERSION) {
+                log.append('\n').append("OS version is not a production release")
+                //throw GeneralSecurityException(log.toString())
+            } else if (osVersion < OS_VERSION_MINIMUM) {
+                log.append('\n').append("OS version too old: $osVersion")
+                //throw GeneralSecurityException(log.toString())
+            }
 
             val osPatchLevel = teeEnforced.osPatchLevel
-            if (osPatchLevel < OS_PATCH_LEVEL_MINIMUM) throw GeneralSecurityException("OS patch level too old: $osPatchLevel")
+            if (osPatchLevel < OS_PATCH_LEVEL_MINIMUM) {
+                log.append('\n').append("OS patch level too old: $osPatchLevel")
+                //throw GeneralSecurityException(log.toString())
+            }
 
             val vendorPatchLevel = teeEnforced.vendorPatchLevel
             if (vendorPatchLevel != null) {
                 if (vendorPatchLevel < VENDOR_PATCH_LEVEL_MINIMUM && !extraPatchLevelMissing.contains(
                         device.name
                     )
-                ) throw GeneralSecurityException("Vendor patch level too old: $vendorPatchLevel")
+                ) {
+                    log.append('\n').append("Vendor patch level too old: $vendorPatchLevel")
+                    //throw GeneralSecurityException(log.toString())
+                }
             }
 
             val bootPatchLevel = teeEnforced.bootPatchLevel
@@ -1348,32 +1419,41 @@ class KeyAttestation private constructor() {
                 if (bootPatchLevel < BOOT_PATCH_LEVEL_MINIMUM && !extraPatchLevelMissing.contains(
                         device.name
                     )
-                )
-                    throw GeneralSecurityException("Boot patch level too old: $bootPatchLevel")
+                ) {
+                    log.append('\n').append("Boot patch level too old: $bootPatchLevel")
+                    //throw GeneralSecurityException(log.toString())
+                }
             }
 
             // key sanity checks
-            if (teeEnforced.origin != AuthorizationList.KM_ORIGIN_GENERATED) throw GeneralSecurityException(
-                "not a generated key"
-            )
+            if (teeEnforced.origin != AuthorizationList.KM_ORIGIN_GENERATED) {
+                log.append('\n').append("not a generated key")
+                //throw GeneralSecurityException(log.toString())
+            }
 
-            if (device.rollbackResistant && !teeEnforced.isRollbackResistant) throw GeneralSecurityException(
-                "expected rollback resistant key"
-            )
+            if (device.rollbackResistant && !teeEnforced.isRollbackResistant) {
+                log.append('\n').append("expected rollback resistant key")
+                //throw GeneralSecurityException(log.toString())
+            }
 
             val attestationVersion = attestation.attestationVersion
             if (attestationVersion < device.attestationVersion) {
-                throw GeneralSecurityException("attestation version " + attestationVersion + " below " + device.attestationVersion)
+                log.append('\n')
+                    .append("attestation version " + attestationVersion + " below " + device.attestationVersion)
+                //throw GeneralSecurityException(log.toString())
             }
             val keymasterVersion = attestation.keymasterVersion
             if (keymasterVersion < device.keymasterVersion) {
-                throw GeneralSecurityException("keymaster version " + keymasterVersion + " below " + device.keymasterVersion)
+                log.append('\n')
+                    .append("keymaster version " + keymasterVersion + " below " + device.keymasterVersion)
+                //throw GeneralSecurityException(log.toString())
             }
 
             val verifiedBootHash = rootOfTrust.verifiedBootHash
-            if (attestationVersion >= 3 && verifiedBootHash == null) throw GeneralSecurityException(
-                "verifiedBootHash expected for attestation version >= 3"
-            )
+            if (attestationVersion >= 3 && verifiedBootHash == null) {
+                log.append('\n').append("verifiedBootHash expected for attestation version >= 3")
+                //throw GeneralSecurityException(log.toString())
+            }
 
             // OS-enforced checks and information
             val dpm = context.getSystemService(DevicePolicyManager::class.java)
@@ -1385,35 +1465,43 @@ class KeyAttestation private constructor() {
                     try {
                         pm.getApplicationInfo(name.packageName, 0)
                     } catch (e: PackageManager.NameNotFoundException) {
-                        throw GeneralSecurityException(e);
+                        log.append('\n').append(e.toString())
+                        //throw GeneralSecurityException(log.toString())
                     }
                 }
             }
             val encryptionStatus = dpm.storageEncryptionStatus
+            log.append('\n').append("encryptionStatus:$encryptionStatus")
+            log.append('\n').append("device.perUserEncryption:${device.perUserEncryption}")
             if (device.perUserEncryption) {
                 if (encryptionStatus != DevicePolicyManager.ENCRYPTION_STATUS_ACTIVE_PER_USER) {
-                    throw GeneralSecurityException("invalid encryption status")
+                    log.append('\n').append("invalid encryption status")
+                    //throw GeneralSecurityException(log.toString())
                 }
             } else {
                 if (encryptionStatus != DevicePolicyManager.ENCRYPTION_STATUS_ACTIVE &&
                     encryptionStatus != DevicePolicyManager.ENCRYPTION_STATUS_ACTIVE_DEFAULT_KEY
                 ) {
-                    throw GeneralSecurityException("invalid encryption status")
+                    log.append('\n').append("invalid encryption status")
+                    //throw GeneralSecurityException(log.toString())
                 }
             }
 
             val keyguardManager = context.getSystemService(KeyguardManager::class.java)
             val userProfileSecure = keyguardManager.isDeviceSecure
-            if (userProfileSecure && !keyguardManager.isKeyguardSecure) throw GeneralSecurityException(
-                "keyguard state inconsistent"
-            )
+            log.append('\n').append("userProfileSecure:$userProfileSecure")
+            if (userProfileSecure && !keyguardManager.isKeyguardSecure) {
+                log.append('\n').append("keyguard state inconsistent")
+                //throw GeneralSecurityException(log.toString())
+            }
         } catch (e: GeneralSecurityException) {
             if (!hasPersistentKey) {
                 keyStoreProxy.deleteKey(persistentKeystoreAlias)
             }
+            log.append('\n').append(e.toString())
             throw e
         }
-
+        return log.toString()
     }
 
     @Throws(GeneralSecurityException::class)
